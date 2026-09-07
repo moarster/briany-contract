@@ -1,0 +1,23 @@
+services:
+  scalar:
+    image: scalarapi/api-reference:latest
+    volumes:
+      - ./dist/openapi-v1.bundled.yaml:/docs/openapi-v1.yaml:ro
+    environment:
+      API_REFERENCE_CONFIG: |
+        {
+          "theme": "deepSpace"
+        }
+    restart: unless-stopped
+    networks:
+      - traefik_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_default"
+      - "traefik.http.routers.scalar.rule=Host(`scalar.briany.ru`)"
+      - "traefik.http.routers.scalar.entrypoints=web"
+      - "traefik.http.services.scalar.loadbalancer.server.port=8080"
+
+networks:
+  traefik_default:
+    external: true

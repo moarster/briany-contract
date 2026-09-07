@@ -1,4 +1,4 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
   title: Briany BPM API
   version: 2.0.0
@@ -428,9 +428,11 @@ paths:
   '/api/v1/process-instances/{id}':
     get:
       tags:
-        - ProcessInstances
+        - ProcessInstance
       operationId: getProcessInstance
       summary: Get process instance by id
+      description: |
+        Returns a single process instance by its id.
       responses:
         '200':
           description: Process instance data
@@ -1045,14 +1047,14 @@ components:
           type: string
     AppDefinition:
       type: object
-      example:
-        id: 'app:12'
-        key: loans
-        version: 1
-        name: Loans Workspace
-        description: Loan workflow cockpit
-        icon: bank
-        theme: default
+      examples:
+        - id: 'app:12'
+          key: loans
+          version: 1
+          name: Loans Workspace
+          description: Loan workflow cockpit
+          icon: bank
+          theme: default
       required:
         - id
         - key
@@ -1076,14 +1078,14 @@ components:
         deploymentId:
           type: string
     Application:
-      example:
-        id: 'app:12'
-        key: loans
-        version: 1
-        name: Loans Workspace
-        description: Loan workflow cockpit
-        icon: bank
-        theme: default
+      examples:
+        - id: 'app:12'
+          key: loans
+          version: 1
+          name: Loans Workspace
+          description: Loan workflow cockpit
+          icon: bank
+          theme: default
       allOf:
         - type: object
           properties:
@@ -1136,15 +1138,15 @@ components:
         - $ref: '#/components/schemas/PagedResponse'
     ProcessDefinition:
       type: object
-      example:
-        id: 'orderProcess:7:4a0716d3'
-        key: orderProcess
-        name: Order Process
-        description: Order approval and fulfillment process
-        version: 7
-        category: workflow
-        deploymentId: dep-7741
-        hasStartForm: false
+      examples:
+        - id: 'orderProcess:7:4a0716d3'
+          key: orderProcess
+          name: Order Process
+          description: Order approval and fulfillment process
+          version: 7
+          category: workflow
+          deploymentId: dep-7741
+          hasStartForm: false
       required:
         - id
         - key
@@ -1207,19 +1209,19 @@ components:
       description: 'Used in compact collection listings (bpmn, cmmn, dmn, bform)'
     ProcessInstance:
       type: object
-      example:
-        id: '2501'
-        name: Order
-        businessKey: ORD-2026-0001
-        state: running
-        startedAt: '2026-04-07T09:30:00Z'
-        startedBy: '1001'
-        processDefinition:
-          id: 'orderProcess:7:4a0716d3'
-          key: orderProcess
-          name: Order Process
-          version: 7
-        graphicalNotationDefined: true
+      examples:
+        - id: '2501'
+          name: Order
+          businessKey: ORD-2026-0001
+          state: running
+          startedAt: '2026-04-07T09:30:00Z'
+          startedBy: '1001'
+          processDefinition:
+            id: 'orderProcess:7:4a0716d3'
+            key: orderProcess
+            name: Order Process
+            version: 7
+          graphicalNotationDefined: true
       required:
         - id
         - state
@@ -1279,12 +1281,12 @@ components:
           type: array
           items:
             type: string
-      example:
-        id: '1002'
-        displayName: Ivan Petrov
-        groupIds:
-          - 'role:manager'
-          - 'subdiv:101791'
+      examples:
+        - id: '1002'
+          displayName: Ivan Petrov
+          groupIds:
+            - 'role:manager'
+            - 'subdiv:101791'
     Task:
       type: object
       required:
@@ -1328,24 +1330,24 @@ components:
           type: integer
         processBusinessKey:
           type: string
-      example:
-        id: '7741'
-        name: Approve Order
-        description: Manual approval for order
-        state: active
-        assignee:
-          id: '1001'
-          displayName: Ivan Petrov
-          groupIds:
-            - 'role:manager'
-        processInstanceId: '2501'
-        processDefinitionId: 'orderProcess:7:4a0716d3'
-        taskDefinitionKey: approveOrder
-        formKey: orderApproval
-        createdAt: '2026-04-07T09:35:00Z'
-        dueAt: '2026-04-08T09:35:00Z'
-        priority: 50
-        processBusinessKey: ORD-2026-0001
+      examples:
+        - id: '7741'
+          name: Approve Order
+          description: Manual approval for order
+          state: active
+          assignee:
+            id: '1001'
+            displayName: Ivan Petrov
+            groupIds:
+              - 'role:manager'
+          processInstanceId: '2501'
+          processDefinitionId: 'orderProcess:7:4a0716d3'
+          taskDefinitionKey: approveOrder
+          formKey: orderApproval
+          createdAt: '2026-04-07T09:35:00Z'
+          dueAt: '2026-04-08T09:35:00Z'
+          priority: 50
+          processBusinessKey: ORD-2026-0001
     TaskPage:
       x-kotlin-implements:
         - ru.briany.common.api.dtos.PagedList<Task>
@@ -1386,12 +1388,12 @@ components:
           type: integer
         deploymentId:
           type: string
-      example:
-        id: 5614ef25-33f9-49d8-b0fc-3e4e67269c0d
-        formKey: orderApproval
-        name: Order Approval
-        version: 4
-        deploymentId: dep-7741
+      examples:
+        - id: 5614ef25-33f9-49d8-b0fc-3e4e67269c0d
+          formKey: orderApproval
+          name: Order Approval
+          version: 4
+          deploymentId: dep-7741
     FormSummaryPage:
       x-kotlin-implements:
         - ru.briany.common.api.dtos.PagedList<FormSummary>
@@ -1728,23 +1730,23 @@ components:
         - deploymentId
         - deployedAt
       type: object
-      example:
-        id: 5614ef25-33f9-49d8-b0fc-3e4e67269c0d
-        key: orderApproval
-        name: Order Approval
-        version: 4
-        schema:
-          id: orderApproval
-          type: default
-          components:
-            - key: approved
-              type: checkbox
-              label: Approve
-        variables:
-          - approved
-          - comment
-        deploymentId: dep-7741
-        deployedAt: '2026-04-07T08:00:00Z'
+      examples:
+        - id: 5614ef25-33f9-49d8-b0fc-3e4e67269c0d
+          key: orderApproval
+          name: Order Approval
+          version: 4
+          schema:
+            id: orderApproval
+            type: default
+            components:
+              - key: approved
+                type: checkbox
+                label: Approve
+          variables:
+            - approved
+            - comment
+          deploymentId: dep-7741
+          deployedAt: '2026-04-07T08:00:00Z'
       required:
         - id
         - key
@@ -1788,26 +1790,26 @@ components:
         variables:
           type: object
           additionalProperties: true
-      example:
-        task:
-          id: '7743'
-          name: Approve Order
-          state: active
-          priority: 50
-        form:
-          id: 5614ef25-33f9-49d8-b0fc-3e4e67269c0a
-          key: orderApproval
-          version: 4
-          schema:
-            id: orderApprovalSchema
+      examples:
+        - task:
+            id: '7743'
+            name: Approve Order
+            state: active
+            priority: 50
+          form:
+            id: 5614ef25-33f9-49d8-b0fc-3e4e67269c0a
+            key: orderApproval
+            version: 4
+            schema:
+              id: orderApprovalSchema
+            variables:
+              - approved
+              - comment
+            deploymentId: dep-7741
+            deployedAt: '2026-04-07T08:00:00Z'
           variables:
-            - approved
-            - comment
-          deploymentId: dep-7741
-          deployedAt: '2026-04-07T08:00:00Z'
-        variables:
-          approved: false
-          comment: ''
+            approved: false
+            comment: ''
     PagedResponse:
       title: PagedResponse
       type: object

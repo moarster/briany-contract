@@ -1,0 +1,22 @@
+{
+  "name": "bpm-openapi",
+  "private": true,
+  "scripts": {
+    "lint": "spectral lint rest/openapi-v1.yaml --ruleset .spectral.cjs --format pretty",
+    "lint:ci": "spectral lint rest/openapi-v1.yaml --ruleset .spectral.cjs --format junit --output spectral-report.xml",
+    "bundle": "docker run --rm -v \"${PWD}:/spec\" -w /spec redocly/cli:1.34.5 bundle rest/openapi-v1.yaml -o dist/openapi-v1.bundled.yaml",
+    "preview": "npm run bundle && docker run --rm -p 8080:8080 -v \"${PWD}/dist/openapi-v1.bundled.yaml:/docs/openapi-v1.yaml:ro\" scalarapi/api-reference",
+    "changelog": "conventional-changelog -p conventionalcommits -i CHANGELOG.md -s"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@stoplight/spectral-cli": "6.16.0",
+    "conventional-changelog-cli": "^5.0.0"
+  },
+  "dependencies": {
+    "@stoplight/spectral-functions": "^1.10.5",
+    "@stoplight/spectral-rulesets": "^1.22.7"
+  },
+  "packageManager": "pnpm@12.3.4"
+}
