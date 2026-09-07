@@ -15,7 +15,8 @@ info:
     email: ivan@moarse.ru
     name: Ivan Donchenko
   license:
-    name: ''
+    name: Apache 2.0
+    identifier: Apache-2.0
 servers:
   - url: 'https://briany.ru'
     description: Developer Stand
@@ -25,24 +26,14 @@ security:
 tags:
   - name: Application
     description: 'Manages workflow applications. An application bundles related process definitions, forms, and resources into one workspace.'
-    x-audience: public
-    x-implemented: true
   - name: ProcessDefinition
     description: 'Catalog of process definitions. A process definition is a BPMN model describing a business process; it can have multiple versions.'
-    x-audience: public
-    x-implemented: true
   - name: ProcessInstance
     description: Query and start process instances. A process instance is one concrete execution of a process definition.
-    x-audience: public
-    x-implemented: true
   - name: Form
     description: Catalog of forms. Forms describe the user interface for tasks and start events.
-    x-audience: public
-    x-implemented: true
   - name: ModelerApp
     description: 'Server-side BPMN/DMN/bform modeling workspace. Stores editable sources without an immediate engine deployment and tracks draft/synced/ahead synchronization state against Flowable.'
-    x-audience: public
-    x-implemented: true
 paths:
   /api/v1/applications:
     get:
