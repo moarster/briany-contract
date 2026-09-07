@@ -39,4 +39,22 @@ server interfaces and a Scalar reference is rendered for humans.
 - New operations must carry `operationId` and exactly one `tag` (Spectral enforces this).
 - Schema names must be PascalCase (Spectral warns).
 - If you add a new vendor extension, document it in the table above.
+
+## Vendor extensions
+
+| Extension | Where | Meaning |
+|---|---|---|
+| `x-audience` | tag | Intended consumer of the tag's operations. |
+| `x-implemented` | tag | Whether the backend implements the tag's operations yet. |
+| `x-spring-paginated` | operation | Generate Spring `Pageable` for the operation. |
+| `x-with-principal` | operation | The operation resolves against the authenticated principal. |
+| `x-kotlin-implements` / `-fields` | schema | Generated DTO implements the named Kotlin interface. |
+
+### Modelling-time XML namespaces
+
+Not part of this contract's payloads, but produced by clients of it and recorded here so
+the shape is not reinvented: `http://briany.ru/bpmn` (prefix `briany`) carries
+`briany:descriptorId` and `briany:descriptorVersion` on a BPMN element, pinning it to the
+`BpmnElementDescriptor` revision it was configured with. Flowable ignores attributes in
+unknown namespaces, so these are inert at runtime.
 - Commit messages must follow Conventional Commits format (commitlint enforces this).

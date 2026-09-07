@@ -43,7 +43,79 @@ tags:
     description: 'Server-side BPMN/DMN/bform modeling workspace. Stores editable sources without an immediate engine deployment and tracks draft/synced/ahead synchronization state against Flowable.'
     x-audience: public
     x-implemented: true
+  - name: Identity
+    description: 'The authenticated principal. Resolves the current user and the groups they belong to, so the client can render assignment filters and claim actions without a directory API.'
+    x-audience: public
+    x-implemented: false
+  - name: Platform
+    description: 'Engine capabilities and the modeling palette. Describes what the deployed engine accepts, so a client never offers a construct the engine would reject.'
+    x-audience: public
+    x-implemented: false
+  - name: Task
+    description: 'Human tasks. A task is one unit of work assigned to a user or offered to a group of candidates; it may carry a form describing the data to collect.'
+    x-audience: public
+    x-implemented: false
 paths:
+  /api/v1/me:
+    get:
+      tags:
+        - Identity
+      x-with-principal: true
+      operationId: getCurrentUser
+      summary: Get the authenticated user
+      description: |
+        Returns the principal behind the current request, together with the ids of the
+        groups it belongs to. Flowable resolves candidate groups against exactly these
+        ids, so a client can render group-based work lists without a directory API.
+      responses:
+        '200':
+          description: The authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/engine-capabilities:
+    get:
+      tags:
+        - Platform
+      operationId: getEngineCapabilities
+      summary: Get engine capabilities
+      description: |
+        Describes the constraints this deployment enforces on incoming models: which
+        activity types may be deployed, which Spring beans a `flowable:delegateExpression`
+        may resolve to, and which package prefixes a `flowable:class` may use. A modeling
+        client reads this to avoid authoring a model that deployment validation rejects.
+      responses:
+        '200':
+          description: Engine capabilities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EngineCapabilities'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/bpmn-palette:
+    get:
+      tags:
+        - Platform
+      operationId: getBpmnPalette
+      summary: Get the custom BPMN palette
+      description: |
+        Returns the custom element descriptors the deployment publishes. Each descriptor
+        names the BPMN node it compiles into and carries the settings form for
+        configuring it. An empty list is valid and means the palette holds only the
+        built-in elements.
+      responses:
+        '200':
+          description: The custom palette
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BpmnPalette'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/v1/applications:
     get:
       tags:
@@ -222,6 +294,7 @@ paths:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
         - $ref: '#/components/parameters/SortParam'
+        - $ref: '#/components/parameters/IncludeStatsParam'
       responses:
         '200':
           description: Page of process definitions
@@ -267,6 +340,8 @@ paths:
       summary: Get process definition by key (latest version)
       description: |
         Returns the latest process definition for a key.
+      parameters:
+        - $ref: '#/components/parameters/IncludeStatsParam'
       responses:
         '200':
           description: Process definition data
@@ -333,6 +408,129 @@ paths:
     parameters:
       - $ref: '#/components/parameters/Key'
       - $ref: '#/components/parameters/Version'
+  '/api/v1/processes/{key}/xml':
+    get:
+      tags:
+        - ProcessDefinition
+      operationId: getProcessXml
+      summary: Get the BPMN XML of a process definition (latest version)
+      description: |
+        Returns the BPMN 2.0 XML source of the latest version of the process definition.
+        This is the deployed resource itself, so a viewer renders exactly what the engine
+        executes.
+      responses:
+        '200':
+          description: BPMN XML source
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: 'Carries the deployed resource name, e.g. attachment; filename="orderProcess.bpmn".'
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Key'
+  '/api/v1/processes/{key}/versions/{version}/xml':
+    get:
+      tags:
+        - ProcessDefinition
+      operationId: getProcessVersionXml
+      summary: Get the BPMN XML of a process definition version
+      description: |
+        Returns the BPMN 2.0 XML source of one specific version of the process definition.
+      responses:
+        '200':
+          description: BPMN XML source
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: Carries the deployed resource name.
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Key'
+      - $ref: '#/components/parameters/Version'
+  '/api/v1/processes/{key}/start':
+    post:
+      tags:
+        - ProcessInstance
+      x-with-principal: true
+      operationId: startProcessInstance
+      summary: Start a process instance
+      description: |
+        Starts a new instance of the process definition. The latest version is used
+        unless `version` names another one. A business key is an optional caller-supplied
+        identifier, unique per process definition, that links the instance to a record in
+        another system.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartProcessInstanceRequest'
+      responses:
+        '201':
+          description: Process instance started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    parameters:
+      - $ref: '#/components/parameters/Key'
+  '/api/v1/processes/{key}/start-form':
+    get:
+      tags:
+        - ProcessDefinition
+      operationId: getProcessStartForm
+      summary: Get the start form of a process definition
+      description: |
+        Returns the form referenced by the `flowable:formKey` of the process start event,
+        resolved to its deployed schema. Complements the `hasStartForm` flag on the
+        definition: a definition without a start form answers `404`.
+      responses:
+        '200':
+          description: The start form
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Key'
   '/api/v1/processes/{key}/process-instances':
     get:
       tags:
@@ -432,7 +630,8 @@ paths:
       operationId: getProcessInstance
       summary: Get process instance by id
       description: |
-        Returns a single process instance by its id.
+        Returns a single process instance by its id. Runtime and historic instances are
+        served from the same path, so a link to an instance keeps working after it ends.
       responses:
         '200':
           description: Process instance data
@@ -446,13 +645,369 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - ProcessInstance
+      operationId: deleteProcessInstance
+      summary: Delete the historic record of a process instance
+      description: |
+        Removes the instance and its history permanently. Unlike `cancelProcessInstance`,
+        which ends a running instance but keeps its history queryable, this leaves no
+        record behind.
+      responses:
+        '204':
+          description: Process instance deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     parameters:
-      - name: id
-        in: path
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/process-instances/{id}/activities':
+    get:
+      tags:
+        - ProcessInstance
+      operationId: listProcessInstanceActivities
+      summary: List the activity history of a process instance
+      description: |
+        Returns every activity the instance has entered, completed or been terminated in,
+        in start order. `activityId` is the id of the BPMN element in the model, which is
+        what joins a history entry to a shape on the diagram. A single instance's history
+        is bounded, so the response is not paginated.
+      responses:
+        '200':
+          description: Activity instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityInstance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/process-instances/{id}/variables':
+    get:
+      tags:
+        - ProcessInstance
+      operationId: listProcessInstanceVariables
+      summary: List the variables of a process instance
+      description: |
+        Returns the variables visible in the instance. A variable declared on the process
+        instance itself has `global` scope; one declared on a child execution or a task has
+        `local` scope and is visible only within it. Not paginated.
+      responses:
+        '200':
+          description: Variables
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Variable'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/process-instances/{id}/cancel':
+    post:
+      tags:
+        - ProcessInstance
+      operationId: cancelProcessInstance
+      summary: Cancel a running process instance
+      description: |
+        Terminates a running instance and all of its executions. The historic record is
+        kept, so the instance remains queryable with the state it ended in. Use
+        `deleteProcessInstance` to remove the history as well.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelProcessInstanceRequest'
+      responses:
+        '204':
+          description: Process instance cancelled
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  /api/v1/tasks:
+    get:
+      tags:
+        - Task
+      x-spring-paginated: true
+      x-with-principal: true
+      operationId: listTasks
+      summary: List tasks
+      description: |
+        Returns a paginated list of human tasks. `assignment` is resolved on the server
+        against the authenticated principal, so a client never has to fetch its own groups
+        to build a work list.
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/SortParam'
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - active
+              - completed
+            default: active
+          description: |
+            Filters by task state. `active` returns runtime tasks, `completed` returns
+            historic ones.
+        - name: assignment
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TaskAssignmentFilter'
+          description: |
+            Filters by the task's relation to the authenticated principal. Mutually
+            exclusive with `assignee`.
+        - name: assignee
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 'Filters by an explicit assignee id. Mutually exclusive with `assignment`.'
+        - name: processDefinitionKey
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filters by the key of the process definition the task belongs to.
+        - name: processInstanceId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filters by the process instance the task belongs to.
+        - name: taskDefinitionKey
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 'Filters by the id of the user task element in the BPMN model.'
+        - name: nameLike
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 'Case-insensitive substring match on the task name.'
+        - name: dueBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Returns tasks due strictly before this instant.
+        - name: dueAfter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Returns tasks due strictly after this instant.
+      responses:
+        '200':
+          description: Page of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  '/api/v1/tasks/{id}':
+    get:
+      tags:
+        - Task
+      operationId: getTask
+      summary: Get a task by id
+      description: |
+        Returns one task. Runtime and historic tasks are served from the same path, so a
+        link to a task keeps working after it is completed.
+      responses:
+        '200':
+          description: Task data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/tasks/{id}/form':
+    get:
+      tags:
+        - Task
+      operationId: getTaskForm
+      summary: Get the form of a task
+      description: |
+        Returns the task, the deployed schema of the form its `formKey` names, and the
+        current values of the variables that form binds. A task without a `formKey`
+        answers `404` with the code `TASK_HAS_NO_FORM`, which a client handles by
+        collecting the variables directly instead of treating it as an error.
+      responses:
+        '200':
+          description: Task with its form and bound variables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/tasks/{id}/claim':
+    post:
+      tags:
+        - Task
+      x-with-principal: true
+      operationId: claimTask
+      summary: Claim a task
+      description: |
+        Assigns the task to the authenticated principal. Claiming a task that already has
+        an assignee is a conflict; unassign it first.
+      responses:
+        '200':
+          description: The claimed task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/tasks/{id}/unclaim':
+    post:
+      tags:
+        - Task
+      operationId: unclaimTask
+      summary: Unclaim a task
+      description: |
+        Clears the assignee, returning the task to the pool its candidate users and
+        candidate groups can claim from.
+      responses:
+        '200':
+          description: The unclaimed task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/tasks/{id}/assign':
+    post:
+      tags:
+        - Task
+      operationId: assignTask
+      summary: Assign a task to a user
+      description: |
+        Sets the assignee of the task to the given user, replacing any current assignee.
+      requestBody:
         required: true
-        description: Process instance UUID
-        schema:
-          $ref: '#/components/schemas/UUID'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTaskRequest'
+      responses:
+        '200':
+          description: The assigned task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+      - $ref: '#/components/parameters/Id'
+  '/api/v1/tasks/{id}/complete':
+    post:
+      tags:
+        - Task
+      x-with-principal: true
+      operationId: completeTask
+      summary: Complete a task
+      description: |
+        Completes the task and continues the process. Variables in the body are set on the
+        process instance before the task is completed, so they are visible to everything
+        downstream of it.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteTaskRequest'
+      responses:
+        '204':
+          description: Task completed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    parameters:
+      - $ref: '#/components/parameters/Id'
   /api/v1/forms:
     get:
       tags:
@@ -566,6 +1121,7 @@ paths:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
         - $ref: '#/components/parameters/SortParam'
+        - $ref: '#/components/parameters/IncludeStatsParam'
         - name: state
           in: query
           required: false
@@ -619,6 +1175,8 @@ paths:
       summary: Get a modeler app by key
       description: |
         Returns a modeler app with its files and, when deployed, the embedded deployed application.
+      parameters:
+        - $ref: '#/components/parameters/IncludeStatsParam'
       responses:
         '200':
           description: Modeler app data
@@ -948,6 +1506,24 @@ components:
       schema:
         type: string
       description: definition key
+    IncludeStatsParam:
+      name: includeStats
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: |
+        Includes the optional `stats` projection in the response. Computing instance
+        counts costs an extra aggregation per row, so it is opt-in and default listings
+        stay cheap.
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 'Engine-assigned identifier. Opaque: do not parse it.'
     ProcessInstanceState:
       name: state
       in: query
@@ -1171,6 +1747,10 @@ components:
         hasStartForm:
           type: boolean
           default: false
+        stats:
+          allOf:
+            - $ref: '#/components/schemas/ProcessInstanceStats'
+          description: 'Instance counts. Present only when the request asked for `includeStats`.'
     ProcessDefinitionPage:
       x-kotlin-implements:
         - ru.briany.common.api.dtos.PagedList<ProcessDefinition>
@@ -1311,6 +1891,14 @@ components:
           type: string
         processDefinitionId:
           type: string
+        processDefinitionKey:
+          type: string
+          description: |
+            Key of the process definition the task belongs to. Carried on the task so a
+            work list can show and filter by process without a lookup per row.
+        processDefinitionName:
+          type: string
+          description: Name of the process definition the task belongs to.
         caseInstanceId:
           type: string
         taskDefinitionKey:
@@ -1378,8 +1966,7 @@ components:
         - deploymentId
       properties:
         id:
-          type: string
-          format: uuid
+          $ref: '#/components/schemas/UUID'
         formKey:
           type: string
         name:
@@ -1757,8 +2344,7 @@ components:
         - deployedAt
       properties:
         id:
-          type: string
-          format: uuid
+          $ref: '#/components/schemas/UUID'
         key:
           type: string
         name:
@@ -1810,6 +2396,297 @@ components:
           variables:
             approved: false
             comment: ''
+    EngineCapabilities:
+      type: object
+      description: |
+        The constraints this deployment enforces on models it accepts. A modeling client
+        reads them once and offers only what deployment validation will let through.
+      required:
+        - allowedActivityTypes
+        - allowedDelegateBeans
+        - allowedClassPrefixes
+      properties:
+        flowableVersion:
+          type: string
+          description: Version of the embedded Flowable engine.
+        allowedActivityTypes:
+          type: array
+          description: |
+            Activity types the deployment validator accepts, in Flowable's snake_case
+            naming (`user_task`, `service_task`, ...). Meaningful only when
+            `activityWhitelistEnabled` is true.
+          items:
+            type: string
+        allowedDelegateBeans:
+          type: array
+          description: |
+            Names of the Spring beans a `flowable:delegateExpression` may resolve to.
+            A delegate outside this list is rejected at deployment.
+          items:
+            type: string
+        allowedClassPrefixes:
+          type: array
+          description: |
+            Package prefixes a `flowable:class` may start with. A class outside them is
+            rejected at deployment.
+          items:
+            type: string
+        activityWhitelistEnabled:
+          type: boolean
+          description: 'Whether `allowedActivityTypes` is enforced at all.'
+        httpTaskEnabled:
+          type: boolean
+          description: 'Whether `<serviceTask flowable:type="http">` is available.'
+      examples:
+        - flowableVersion: 8.0.0
+          allowedActivityTypes:
+            - user_task
+            - service_task
+            - call_activity
+            - sub_process
+            - business_rule_task
+          allowedDelegateBeans:
+            - kvDelegate
+          allowedClassPrefixes:
+            - ru.briany.
+            - org.flowable.
+          activityWhitelistEnabled: true
+          httpTaskEnabled: true
+    BpmnPalette:
+      type: object
+      description: |
+        The custom element descriptors published by this deployment. An empty `elements`
+        array is valid and means only the built-in palette is available.
+      required:
+        - elements
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: './components/schemas/BpmnElementDescriptor.yaml'
+    ProcessInstanceStats:
+      type: object
+      description: Instance counts for one process definition, by state.
+      required:
+        - running
+        - completed
+        - suspended
+        - total
+      properties:
+        running:
+          type: integer
+        completed:
+          type: integer
+        suspended:
+          type: integer
+        total:
+          type: integer
+      examples:
+        - running: 12
+          completed: 340
+          suspended: 1
+          total: 353
+    ModelerAppStats:
+      type: object
+      description: 'Composition of a modeler app: how many files of each kind it holds.'
+      required:
+        - processDefinitions
+        - decisions
+        - forms
+      properties:
+        processDefinitions:
+          type: integer
+        decisions:
+          type: integer
+        forms:
+          type: integer
+        instances:
+          $ref: '#/components/schemas/ProcessInstanceStats'
+      examples:
+        - processDefinitions: 2
+          decisions: 1
+          forms: 3
+          instances:
+            running: 12
+            completed: 340
+            suspended: 1
+            total: 353
+    ActivityInstanceState:
+      title: ActivityInstanceState
+      type: string
+      enum:
+        - active
+        - completed
+        - terminated
+      description: |
+        State of one activity in the instance history.
+        - `active` - entered and not yet left
+        - `completed` - left normally
+        - `terminated` - ended by cancellation or by an interrupting boundary event
+    ActivityInstance:
+      type: object
+      description: |
+        One activity the process instance has entered. `activityId` is the id of the BPMN
+        element in the model, so a history entry joins directly to a shape on the diagram.
+      required:
+        - id
+        - activityId
+        - activityType
+        - state
+      properties:
+        id:
+          type: string
+        activityId:
+          type: string
+          description: 'Id of the BPMN element in the model.'
+        activityName:
+          type: string
+        activityType:
+          type: string
+          description: 'BPMN element type, e.g. `userTask`, `serviceTask`, `exclusiveGateway`.'
+        state:
+          $ref: '#/components/schemas/ActivityInstanceState'
+        executionId:
+          type: string
+        parentActivityInstanceId:
+          type: string
+          description: |
+            The enclosing activity instance, set for activities inside a sub-process.
+            Absent at the top level. Lets a client rebuild the containment tree.
+        taskId:
+          type: string
+          description: 'Set when the activity is a user task.'
+        calledProcessInstanceId:
+          type: string
+          description: 'Set when the activity is a call activity, naming the instance it started.'
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        durationInMillis:
+          type: integer
+          format: int64
+      examples:
+        - id: '9001'
+          activityId: approveOrder
+          activityName: Approve Order
+          activityType: userTask
+          state: active
+          executionId: '2502'
+          taskId: '7741'
+          startTime: '2026-04-07T09:35:00Z'
+    VariableScope:
+      title: VariableScope
+      type: string
+      enum:
+        - global
+        - local
+      description: |
+        - `global` - held on the process instance and visible everywhere in it
+        - `local` - held on one execution or task and visible only within it
+    Variable:
+      type: object
+      description: One process variable and the scope it lives in.
+      required:
+        - name
+        - scope
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          description: 'Flowable variable type, e.g. `string`, `integer`, `boolean`, `json`.'
+        value:
+          description: 'The value, of whatever JSON type the variable holds.'
+        scope:
+          $ref: '#/components/schemas/VariableScope'
+        executionId:
+          type: string
+        taskId:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        lastUpdatedTime:
+          type: string
+          format: date-time
+      examples:
+        - name: amount
+          type: integer
+          value: 4200
+          scope: global
+          executionId: '2501'
+          createTime: '2026-04-07T09:30:00Z'
+    StartProcessInstanceRequest:
+      type: object
+      properties:
+        businessKey:
+          type: string
+          description: |
+            Caller-supplied identifier, unique per process definition, linking the instance
+            to a record in another system.
+        name:
+          type: string
+          description: Human-readable name for the instance.
+        version:
+          type: integer
+          description: 'Start a specific version. The latest version is used when omitted.'
+        variables:
+          type: object
+          additionalProperties: true
+          description: Initial process variables.
+      examples:
+        - businessKey: ORD-2026-0001
+          variables:
+            amount: 4200
+    CancelProcessInstanceRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 'Recorded on the historic instance as the deletion reason.'
+      examples:
+        - reason: Cancelled by the customer
+    TaskAssignmentFilter:
+      title: TaskAssignmentFilter
+      type: string
+      enum:
+        - any
+        - mine
+        - unassigned
+        - candidate
+      default: any
+      description: |
+        How a task relates to the authenticated principal.
+        - `any` - no assignment filter
+        - `mine` - assigned to the principal
+        - `unassigned` - has no assignee
+        - `candidate` - claimable by the principal: it is a candidate user, or one of its
+          groups is a candidate group
+    AssignTaskRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          description: Id of the user to assign the task to.
+      examples:
+        - userId: '1001'
+    CompleteTaskRequest:
+      type: object
+      properties:
+        variables:
+          type: object
+          additionalProperties: true
+          description: |
+            Variables set on the process instance before the task is completed.
+      examples:
+        - variables:
+            approved: true
+            comment: Looks good
     PagedResponse:
       title: PagedResponse
       type: object
@@ -1925,8 +2802,7 @@ components:
         - errorCount
       properties:
         id:
-          type: string
-          format: uuid
+          $ref: '#/components/schemas/UUID'
         appKey:
           type: string
         fileKey:
@@ -1956,8 +2832,7 @@ components:
         - errors
       properties:
         id:
-          type: string
-          format: uuid
+          $ref: '#/components/schemas/UUID'
         appKey:
           type: string
         fileKey:
@@ -1996,8 +2871,7 @@ components:
         - state
       properties:
         id:
-          type: string
-          format: uuid
+          $ref: '#/components/schemas/UUID'
         key:
           type: string
         name:
@@ -2021,6 +2895,12 @@ components:
         updatedAt:
           type: string
           format: date-time
+        stats:
+          allOf:
+            - $ref: '#/components/schemas/ModelerAppStats'
+          description: |
+            File composition and, once deployed, runtime instance counts. Present only
+            when the request asked for `includeStats`.
     ModelerApp:
       allOf:
         - type: object
