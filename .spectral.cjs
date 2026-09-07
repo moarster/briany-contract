@@ -19,25 +19,6 @@ module.exports = {
       then: { field: 'summary', function: truthy },
     },
 
-    'x-audience-enum': {
-      description: 'x-audience must be one of: public, admin, internal, testing.',
-      severity: 'error',
-      given: '$..x-audience',
-      then: {
-        function: enumeration,
-        functionOptions: { values: ['public', 'admin', 'internal', 'testing'] },
-      },
-    },
-
-    'x-implemented-boolean': {
-      description: 'x-implemented must be a boolean.',
-      severity: 'error',
-      given: '$.tags[*].x-implemented',
-      then: {
-        function: schema,
-        functionOptions: { schema: { type: 'boolean' } },
-      },
-    },
 
     'tag-description': {
       description: 'Every tag must have a description.',
