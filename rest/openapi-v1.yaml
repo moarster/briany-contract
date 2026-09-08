@@ -1857,7 +1857,7 @@ components:
         state:
           type: string
         assignee:
-          type: string
+          $ref: '#/components/schemas/User'
         processInstanceId:
           type: string
         processDefinitionId:
