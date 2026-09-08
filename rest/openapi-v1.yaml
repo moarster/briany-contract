@@ -36,22 +36,15 @@ tags:
     description: 'Server-side BPMN/DMN/bform modeling workspace. Stores editable sources without an immediate engine deployment and tracks draft/synced/ahead synchronization state against Flowable.'
   - name: Identity
     description: 'The authenticated principal. Resolves the current user and the groups they belong to, so the client can render assignment filters and claim actions without a directory API.'
-    x-audience: public
-    x-implemented: false
   - name: Platform
     description: 'Engine capabilities and the modeling palette. Describes what the deployed engine accepts, so a client never offers a construct the engine would reject.'
-    x-audience: public
-    x-implemented: false
   - name: Task
     description: 'Human tasks. A task is one unit of work assigned to a user or offered to a group of candidates; it may carry a form describing the data to collect.'
-    x-audience: public
-    x-implemented: false
 paths:
   /api/v1/me:
     get:
       tags:
         - Identity
-      x-with-principal: true
       operationId: getCurrentUser
       summary: Get the authenticated user
       description: |
@@ -275,7 +268,6 @@ paths:
       tags:
         - ProcessDefinition
       x-spring-paginated: true
-      x-with-principal: true
       operationId: listProcesses
       summary: List process definitions (latest versions)
       description: |
@@ -326,7 +318,6 @@ paths:
     get:
       tags:
         - ProcessDefinition
-      x-with-principal: true
       operationId: getProcess
       summary: Get process definition by key (latest version)
       description: |
@@ -353,7 +344,6 @@ paths:
       tags:
         - ProcessDefinition
       x-spring-paginated: true
-      x-with-principal: true
       operationId: listProcessDefinitionVersions
       summary: Get all versions of a process definition
       description: |
@@ -378,7 +368,6 @@ paths:
     get:
       tags:
         - ProcessDefinition
-      x-with-principal: true
       operationId: getProcessDefinitionVersion
       summary: Get process definition by version
       description: |
@@ -464,7 +453,6 @@ paths:
     post:
       tags:
         - ProcessInstance
-      x-with-principal: true
       operationId: startProcessInstance
       summary: Start a process instance
       description: |
@@ -527,7 +515,6 @@ paths:
       tags:
         - ProcessInstance
       x-spring-paginated: true
-      x-with-principal: true
       operationId: listProcessProcessInstances
       summary: List instances of a process definition
       description: |
@@ -558,7 +545,6 @@ paths:
       tags:
         - ProcessInstance
       x-spring-paginated: true
-      x-with-principal: true
       operationId: listProcessDefinitionVersionInstances
       summary: List instances of a single process definition version
       description: |
@@ -590,7 +576,6 @@ paths:
       tags:
         - ProcessInstance
       x-spring-paginated: true
-      x-with-principal: true
       operationId: listProcessInstances
       summary: List process instances
       description: |
@@ -747,7 +732,6 @@ paths:
       tags:
         - Task
       x-spring-paginated: true
-      x-with-principal: true
       operationId: listTasks
       summary: List tasks
       description: |
@@ -863,7 +847,7 @@ paths:
     get:
       tags:
         - Task
-      operationId: getTaskForm
+      operationId: getFormedTask
       summary: Get the form of a task
       description: |
         Returns the task, the deployed schema of the form its `formKey` names, and the
@@ -876,7 +860,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskForm'
+                $ref: '#/components/schemas/FormedTask'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -889,7 +873,6 @@ paths:
     post:
       tags:
         - Task
-      x-with-principal: true
       operationId: claimTask
       summary: Claim a task
       description: |
@@ -971,7 +954,6 @@ paths:
     post:
       tags:
         - Task
-      x-with-principal: true
       operationId: completeTask
       summary: Complete a task
       description: |
@@ -1873,11 +1855,8 @@ components:
           type: string
         state:
           type: string
-          enum:
-            - active
-            - completed
         assignee:
-          $ref: '#/components/schemas/User'
+          type: string
         processInstanceId:
           type: string
         processDefinitionId:
@@ -2353,7 +2332,7 @@ components:
         deployedAt:
           type: string
           format: date-time
-    TaskForm:
+    FormedTask:
       type: object
       required:
         - task

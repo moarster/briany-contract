@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**bpm-api** — API contract for the Brainy BPM platform. Source of truth for the REST API.
-Spec is authored in OpenAPI 3.0 (`openapi-v1.yaml`); from it the consumer generates Kotlin
+**bpm-api** — API contract for the Briany platform. Source of truth for the REST API.
+Spec is authored in OpenAPI 3.1 (`openapi-v1.yaml`); from it the consumer generates Kotlin
 server interfaces and a Scalar reference is rendered for humans.
 
 
@@ -13,7 +13,7 @@ server interfaces and a Scalar reference is rendered for humans.
 
 | File                                 | Role                                                                                                                                              |
 |--------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `rest/openapi-v1.yaml`               | The contract itself. OpenAPI 3.0.                                                                                                                 |
+| `rest/openapi-v1.yaml`               | The contract itself. OpenAPI 3.1.                                                                                                                 |
 | `.spectral.cjs`                      | Spectral ruleset — extends `oas:recommended`, enforces `operationId`, `tags`, `x-audience` values, `x-implemented` type, PascalCase schema names. |
 | `package.json` / `package-lock.json` | npm deps and scripts (`lint`, `lint:ci`, `preview`, `changelog`).                                                                                 |
 | `commitlint.config.js`               | Conventional Commits validation (types: feat, fix, docs, refactor, chore, ci; PascalCase scope).                                                  |
@@ -24,7 +24,7 @@ server interfaces and a Scalar reference is rendered for humans.
 
 ## Tech Stack
 
-- OpenAPI 3.0 (spec format)
+- OpenAPI 3.1 (spec format)
 - Node.js 22 (CI image: `node:22-slim`)
 - Spectral CLI 6.15.1 (`@stoplight/spectral-cli`) for linting
 - `openapi-generator-cli` 7.21.0 for schema validation (and consumer-side codegen)
