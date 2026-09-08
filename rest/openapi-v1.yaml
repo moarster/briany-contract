@@ -1855,7 +1855,7 @@ components:
         description:
           type: string
         state:
-          type: string
+          $ref: '#/components/schemas/TaskState'
         assignee:
           $ref: '#/components/schemas/User'
         processInstanceId:
@@ -1907,6 +1907,11 @@ components:
           dueAt: '2026-04-08T09:35:00Z'
           priority: 50
           processBusinessKey: ORD-2026-0001
+    TaskState:
+      type: string
+      enum:
+        - active
+        - completed
     TaskPage:
       x-kotlin-implements:
         - ru.briany.common.api.dtos.PagedList<Task>
