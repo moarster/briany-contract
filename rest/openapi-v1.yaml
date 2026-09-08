@@ -14,30 +14,31 @@ info:
   contact:
     email: ivan@moarse.ru
     name: Ivan Donchenko
+    url: https://ivandonchenko.ru
   license:
     name: Apache 2.0
-    identifier: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
 servers:
   - url: 'https://briany.ru'
-    description: Developer Stand
+    description: Demo Stand
 security:
   - BasicAuth: []
   - BearerAuth: []
 tags:
   - name: Application
     description: 'Manages workflow applications. An application bundles related process definitions, forms, and resources into one workspace.'
+  - name: Form
+    description: Catalog of forms. Forms describe the user interface for tasks and start events.
+  - name: Identity
+    description: 'The authenticated principal. Resolves the current user and the groups they belong to, so the client can render assignment filters and claim actions without a directory API.'
+  - name: ModelerApp
+    description: 'Server-side BPMN/DMN/bform modeling workspace. Stores editable sources without an immediate engine deployment and tracks draft/synced/ahead synchronization state against Flowable.'
+  - name: Platform
+    description: 'Engine capabilities and the modeling palette. Describes what the deployed engine accepts, so a client never offers a construct the engine would reject.'
   - name: ProcessDefinition
     description: 'Catalog of process definitions. A process definition is a BPMN model describing a business process; it can have multiple versions.'
   - name: ProcessInstance
     description: Query and start process instances. A process instance is one concrete execution of a process definition.
-  - name: Form
-    description: Catalog of forms. Forms describe the user interface for tasks and start events.
-  - name: ModelerApp
-    description: 'Server-side BPMN/DMN/bform modeling workspace. Stores editable sources without an immediate engine deployment and tracks draft/synced/ahead synchronization state against Flowable.'
-  - name: Identity
-    description: 'The authenticated principal. Resolves the current user and the groups they belong to, so the client can render assignment filters and claim actions without a directory API.'
-  - name: Platform
-    description: 'Engine capabilities and the modeling palette. Describes what the deployed engine accepts, so a client never offers a construct the engine would reject.'
   - name: Task
     description: 'Human tasks. A task is one unit of work assigned to a user or offered to a group of candidates; it may carry a form describing the data to collect.'
 paths:
